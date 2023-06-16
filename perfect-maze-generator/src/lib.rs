@@ -221,7 +221,7 @@ impl PerfectMaze {
                 let new_set: HashSet<_> = set_a.union(set_b).cloned().collect();
 
                 cell_sets[id_set_a] = new_set;
-                cell_sets[id_set_b] = HashSet::new();
+                cell_sets.swap_remove(id_set_b);
             }
         }
     }
