@@ -1,34 +1,28 @@
-use std::io;
-use std::str;
+use clap::Parser;
 
 use perfect_maze_generator as maze_generator;
 
-/// Asks for input from the user
-fn ask_input<T>(prompt: &str) -> Option<T>
-    where
-        T: str::FromStr {
-    // Show prompt and read next line
-    println!("{prompt}");
+/// Perfect Maze Generator can generate a random perfect maze, in which for any two points
+/// only one path exists.
+#[derive(Parser, Debug)]
+struct Cli {
+    /// Amount of rows to use. Cannot be 0.
+    #[arg(long, short)]
+    rows: usize,
 
-    // Read line from user
-    let mut line = String::new();
-    io::stdin().read_line(&mut line).expect("Error reading input");
+    /// Amount of columns to use. Cannot be 0.
+    #[arg(long, short)]
+    columns: usize,
 
-    let value: Result<T, _> = line.trim().parse::<T>();
-    match value {
-        Ok(v) => Some(v),
-        Err(_) => None
-    }
+    /// Seed for randomizing the maze. A seed of 0 means no randomization is done.
+    #[arg(long, short, default_value=None)]
+    seed: Option<u64>,
 }
 
 fn main() {
-    println!("Welcome to Perfect Maze Generator. Answer the following questions");
-    println!("to generate a new maze.");
+    // Get CLI arguments
+    let args = Cli::parse();
 
-    // Ask the user for input
-    let rows = ask_input::<usize>("Rows? ").unwrap();
-    let columns = ask_input::<usize>("Columns? ").unwrap();
-
-    let maze = maze_generator::PerfectMaze::new(columns, rows, None);
+    let maze = maze_generator::PerfectMaze::new(args.columns, args.rows, args.seed);
     println!("{maze}");
 }
