@@ -1,7 +1,7 @@
-use perfect_maze_generator as maze_generator;
 use std::io;
-use std::io::prelude::*;
 use std::str;
+
+use perfect_maze_generator as maze_generator;
 
 /// Asks for input from the user
 fn ask_input<T>(prompt: &str) -> Option<T>
