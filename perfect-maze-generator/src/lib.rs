@@ -185,7 +185,7 @@ impl PerfectMaze {
     }
 
     /// Returns the set that contains the cell
-    fn get_set_with_cell(cell_sets: &Vec<HashSet<usize>>, cell_id: usize) -> Option<usize> {
+    fn get_set_with_cell(cell_sets: &[HashSet<usize>], cell_id: usize) -> Option<usize> {
         cell_sets.iter().enumerate().find_map(|(set_id, set)| if set.contains(&cell_id) {
             Some(set_id)
         } else {
