@@ -4,13 +4,13 @@ use crate::*;
 #[test]
 fn invalid_maze() {
     // This should panic
-    let maze = PerfectMaze::new(0, 0, None);
+    let _maze = PerfectMaze::new(0, 0, None);
 }
 
 #[test]
 fn default_maze() {
     let (columns, rows) = (10, 15);
-    let seed = 0;
+    let seed = 42;
     let maze = PerfectMaze::new(columns, rows, Some(seed));
 
     // Check initial conditions
@@ -39,14 +39,19 @@ fn default_maze() {
 
 #[test]
 fn display_maze() {
+    // Maze 2x3
     let expected =
-        "_____
-|_|_|
-|_|_|
+"_____
+|   |
+| | |
 |_|_|
 ";
 
     let maze = PerfectMaze::new(2, 3, Some(0));
+    assert_eq!(expected, maze.to_string());
 
+    // Maze 1x1
+    let expected = "___\n|_|\n";
+    let maze = PerfectMaze::new(1, 1, None);
     assert_eq!(expected, maze.to_string());
 }
