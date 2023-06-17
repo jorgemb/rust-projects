@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter, Write};
+use std::mem::swap;
 use rand::prelude::*;
 use rand_xoshiro::Xoshiro256StarStar as RandomGenerator;
 
@@ -208,27 +209,30 @@ impl PerfectMaze {
             let (cell_a, cell_b) = self.cell_pair_from_wall(*current_wall);
 
             // Search the set of each cell
-            let id_set_a = Self::get_set_with_cell(&cell_sets, cell_a.id()).unwrap();
-            let id_set_b = Self::get_set_with_cell(&cell_sets, cell_b.id()).unwrap();
+            let mut id_set_a = Self::get_set_with_cell(&cell_sets, cell_a.id()).unwrap();
+            let mut id_set_b = Self::get_set_with_cell(&cell_sets, cell_b.id()).unwrap();
 
             if id_set_a != id_set_b {
                 // Wall can be tumbled
                 self.walls[*current_wall] = false;
 
-                // Merge sets
-                let set_a = cell_sets.get(id_set_a).unwrap();
-                let set_b = cell_sets.get(id_set_b).unwrap();
-                let new_set: HashSet<_> = set_a.union(set_b).cloned().collect();
+                // To remove the sets from the Vec we must make sure that
+                // first we take the one with the largest index. On removal
+                // all the indices from that on are invalidated
+                if id_set_a > id_set_b {
+                    swap(&mut id_set_a, &mut id_set_b);
+                }
 
-                cell_sets[id_set_a] = new_set;
-                cell_sets.swap_remove(id_set_b);
+                // Remove the largest set and extend the previous one
+                let set_b = cell_sets.swap_remove(id_set_b);
+                cell_sets[id_set_a].extend(set_b);
             }
         }
     }
 }
 
 /// Represents a cell within the Maze.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Cell {
     row: usize,
     column: usize,
