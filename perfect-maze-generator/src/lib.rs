@@ -167,20 +167,20 @@ impl PerfectMaze {
     }
 
     /// Returns the cell pair that is separated by the given wall
-    fn cell_pair_from_wall(&self, wall_id: usize) -> (Cell, Cell) {
+    fn cell_pair_from_wall(&self, wall_id: usize) -> (MazeCell, MazeCell) {
         let current_row = wall_id / self.walls_per_row();
         let wall_in_row = wall_id % self.walls_per_row();
         let is_vertical = wall_in_row < (self.columns() - 1);
         let total_columns = self.columns();
 
         if is_vertical {
-            let cell_a = Cell { row: current_row, column: wall_in_row, total_columns };
-            let cell_b = Cell { row: current_row, column: wall_in_row + 1, total_columns };
+            let cell_a = MazeCell { row: current_row, column: wall_in_row, total_columns };
+            let cell_b = MazeCell { row: current_row, column: wall_in_row + 1, total_columns };
             (cell_a, cell_b)
         } else {
             let column = wall_in_row - (self.columns() - 1);
-            let cell_a = Cell { row: current_row, column, total_columns };
-            let cell_b = Cell { row: current_row + 1, column, total_columns };
+            let cell_a = MazeCell { row: current_row, column, total_columns };
+            let cell_b = MazeCell { row: current_row + 1, column, total_columns };
             (cell_a, cell_b)
         }
     }
@@ -233,13 +233,13 @@ impl PerfectMaze {
 
 /// Represents a cell within the Maze.
 #[derive(Debug, PartialEq)]
-struct Cell {
+struct MazeCell {
     row: usize,
     column: usize,
     total_columns: usize,
 }
 
-impl Cell {
+impl MazeCell {
     /// Returns the ID of the cell within the maze
     fn id(&self) -> usize { self.row * self.total_columns + self.column }
 }

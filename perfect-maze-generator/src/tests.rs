@@ -67,10 +67,10 @@ fn internal_values() {
     assert_eq!(maze.walls_per_row(), WALLS_PER_ROW);
 
     // Compare cell positions
-    const C00: Cell = Cell { row: 0, column: 0, total_columns: COLUMNS };
-    const C01: Cell = Cell { row: 0, column: 1, total_columns: COLUMNS };
-    const C10: Cell = Cell { row: 1, column: 0, total_columns: COLUMNS };
-    const C11: Cell = Cell { row: 1, column: 1, total_columns: COLUMNS };
+    const C00: MazeCell = MazeCell { row: 0, column: 0, total_columns: COLUMNS };
+    const C01: MazeCell = MazeCell { row: 0, column: 1, total_columns: COLUMNS };
+    const C10: MazeCell = MazeCell { row: 1, column: 0, total_columns: COLUMNS };
+    const C11: MazeCell = MazeCell { row: 1, column: 1, total_columns: COLUMNS };
     assert_eq!(maze.cell_pair_from_wall(0), (C00, C01));
     assert_eq!(maze.cell_pair_from_wall(COLUMNS - 1), (C00, C10));
     assert_eq!(maze.cell_pair_from_wall(WALLS_PER_ROW), (C10, C11));
