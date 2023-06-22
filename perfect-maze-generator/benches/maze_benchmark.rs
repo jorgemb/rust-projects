@@ -1,4 +1,4 @@
-use criterion::{BenchmarkId, black_box, Criterion, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use perfect_maze_generator::PerfectMaze;
 
 fn sized_maze(c: &mut Criterion) {
