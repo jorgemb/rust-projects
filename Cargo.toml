@@ -2,4 +2,5 @@
 
 members = [
     "perfect-maze-generator",
+    "conway-life",
 ]
