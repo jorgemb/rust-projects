@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/perfect-maze-generator/benches" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/perfect-maze-generator/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/conway-life/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/conway-life/examples" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

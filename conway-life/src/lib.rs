@@ -20,7 +20,7 @@ impl Display for SimCell {
 
 impl SimCell {
     /// Method to easily create new SimCells
-    fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: i32, y: i32) -> Self {
         SimCell { x, y }
     }
 }
@@ -30,24 +30,24 @@ impl SimCell {
 /// 2. Any live cell with two or three live neighbours lives on to the next generation.
 /// 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
 /// 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-struct Environment {
+pub struct Environment {
     living_cells: BTreeSet<SimCell>,
 }
 
 impl Environment {
     /// Creates a new empty environment
-    fn new() -> Self {
+    pub fn new() -> Self {
         Environment { living_cells: BTreeSet::new() }
     }
 
     /// Returns true if the given cell is alive
-    fn get_cell(&self, cell: &SimCell) -> bool {
+    pub fn get_cell(&self, cell: &SimCell) -> bool {
         self.living_cells.contains(cell)
     }
 
     /// Toggles a cell between living and dead.
     /// Returns the new value of the cell.
-    fn toggle_cell(&mut self, cell: &SimCell) -> bool {
+    pub fn toggle_cell(&mut self, cell: &SimCell) -> bool {
         if self.get_cell(cell) {
             // Set cell to dead
             self.living_cells.remove(cell);
@@ -60,12 +60,12 @@ impl Environment {
     }
 
     /// Sets a range to living
-    fn set_living(&mut self, cells: &[SimCell]) {
+    pub fn set_living(&mut self, cells: &[SimCell]) {
         self.living_cells.extend(cells.iter())
     }
 
     /// Performs a simulation step, following the rules for the environment
-    fn simulate(&mut self) {
+    pub fn simulate(&mut self) {
         // Count how the neighborhood is affected
         let mut neighboors = HashMap::with_capacity(self.living_cells.len() * 9);
         for cell in self.living_cells.iter() {
@@ -98,7 +98,7 @@ impl Environment {
     }
 
     /// Fills in a Viewport with the information from the simulation
-    fn fill_viewport(&self, viewport: &mut Viewport) {
+    pub fn fill_viewport(&self, viewport: &mut Viewport) {
         viewport.clear();
 
         self.living_cells.iter().map(|c|
@@ -106,6 +106,12 @@ impl Environment {
                 viewport.set_living(c.x, c.y);
             }
         ).count();
+    }
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -159,7 +165,7 @@ impl Viewport {
     }
 
     /// Sets a position within the viewport as living
-    fn set_living(&mut self, x: i32, y: i32) {
+    pub fn set_living(&mut self, x: i32, y: i32) {
         assert!(self.in_viewport(x, y));
 
         let row = (x - self.x).abs() as usize;
