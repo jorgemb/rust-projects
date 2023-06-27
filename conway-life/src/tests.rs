@@ -168,32 +168,31 @@ mod viewport_panics {
 
     #[test]
     #[should_panic(expected = "width cannot be 0")]
-    fn viewport_width() {
+    fn width() {
         Viewport::new(0, 0, 0, 1);
     }
 
     #[test]
     #[should_panic(expected = "height cannot be 0")]
-    fn viewport_height() {
+    fn height() {
         Viewport::new(0, 0, 1, 0);
     }
 
-
     #[test]
     #[should_panic(expected = "width results in overflow")]
-    fn viewport_width_overflow() {
+    fn width_overflow() {
         Viewport::new(0, 0, usize::MAX, 1);
     }
 
     #[test]
     #[should_panic(expected = "height results in overflow")]
-    fn viewport_height_overflow() {
+    fn height_overflow() {
         Viewport::new(0, 0, 10, usize::MAX);
     }
 
     #[test]
     #[should_panic(expected = "width * height results in overflow")]
-    fn viewport_size() {
+    fn size() {
         Viewport::new(i32::MIN, 0, usize::MAX / 2, 3);
     }
 }
@@ -207,10 +206,18 @@ fn viewport_basic() {
     assert_eq!(viewport.y(), y);
     assert_eq!(viewport.width(), width);
     assert_eq!(viewport.height(), height);
+    assert_eq!(viewport.right(), x.wrapping_add_unsigned(width as u32));
+    assert_eq!(viewport.bottom(), y.wrapping_sub_unsigned(height as u32));
+
+    // Check belonging
+    assert!(viewport.in_viewport(0, 0), "Origin should be in viewport");
+    assert!(viewport.in_viewport(x, y), "Viewport origin should be in viewport");
+    assert!(!viewport.in_viewport(x.wrapping_add_unsigned(width as u32), y), "Right should not be in viewport");
+    assert!(!viewport.in_viewport(x, y.wrapping_add_unsigned(height as u32)), "Bottom should not be in viewport");
 
     // Check clearing
     viewport.data.iter().map(|&d| assert!(!d)).count();
-    viewport.data[10] = true;
+    viewport.set_living(0, 0);
     viewport.clear();
     viewport.data.iter().map(|&d| assert!(!d)).count();
 }
@@ -218,8 +225,20 @@ fn viewport_basic() {
 #[test]
 fn viewport_display() {
     let mut viewport = Viewport::new(-1, 1, 3, 3);
-    viewport.data[4] = true;
+    viewport.set_living(0, 0);
 
     let expected_repr = "   \n x \n   ";
+    assert_eq!(expected_repr, viewport.to_string());
+}
+
+#[test]
+fn environment_viewport() {
+    let mut env = Environment::new();
+    env.set_living(&[SimCell::new(0, 1), SimCell::new(-1, 0), SimCell::new(0, 0), SimCell::new(1, 0), SimCell::new(0, -1)]);
+
+    let mut viewport = Viewport::new(-1, 1, 3, 3);
+    env.fill_viewport(&mut viewport);
+
+    let expected_repr = " x \nxxx\n x ";
     assert_eq!(expected_repr, viewport.to_string());
 }

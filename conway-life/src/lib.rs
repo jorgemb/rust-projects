@@ -98,14 +98,19 @@ impl Environment {
     }
 
     /// Fills in a Viewport with the information from the simulation
-    fn fill_viewport(&self, viewport: &mut Viewport){
+    fn fill_viewport(&self, viewport: &mut Viewport) {
         viewport.clear();
 
+        self.living_cells.iter().map(|c|
+            if viewport.in_viewport(c.x, c.y) {
+                viewport.set_living(c.x, c.y);
+            }
+        ).count();
     }
 }
 
 /// Represents a viewport of an environment at a given position.
-struct Viewport {
+pub struct Viewport {
     x: i32,
     width: usize,
     y: i32,
@@ -121,16 +126,16 @@ impl Viewport {
     /// * `width` == 0
     /// * `height` == 0
     /// * `x + width` > i32_MAX
-    /// * `y + height` > i32_MAX
+    /// * `y - height` < i32_MIN
     /// * `width * height` > usize_MAX
-    fn new(x: i32, y: i32, width: usize, height: usize) -> Self {
+    pub fn new(x: i32, y: i32, width: usize, height: usize) -> Self {
         // Check preconditions
         assert_ne!(width, 0, "width cannot be 0");
         assert_ne!(height, 0, "height cannot be 0");
 
         let (_, overflowing_x) = x.overflowing_add_unsigned(width as u32);
         assert!(!overflowing_x, "X + width results in overflow");
-        let (_, overflowing_y) = y.overflowing_add_unsigned(height as u32);
+        let (_, overflowing_y) = y.overflowing_sub_unsigned(height as u32);
         assert!(!overflowing_y, "y + height results in overflow");
 
         let (_, overflowing_size) = width.overflowing_mul(height);
@@ -143,22 +148,60 @@ impl Viewport {
 
 
     /// Clears the whole buffer, setting every cell as dead
-    fn clear(&mut self){
+    pub fn clear(&mut self) {
         self.data.fill(false);
     }
 
+    /// Returns if the given position is within the viewport
+    #[inline]
+    pub fn in_viewport(&self, x: i32, y: i32) -> bool {
+        x >= self.x && x < self.right() && y <= self.y && y > self.bottom()
+    }
 
+    /// Sets a position within the viewport as living
+    fn set_living(&mut self, x: i32, y: i32) {
+        assert!(self.in_viewport(x, y));
+
+        let row = (x - self.x).abs() as usize;
+        let column = (y - self.y).abs() as usize;
+        let index = row * self.width + column;
+
+        if let Some(c) = self.data.get_mut(index) {
+            *c = true;
+        }
+    }
+
+
+    /// Returns the left boundary of the Viewport (x)
     pub fn x(&self) -> i32 {
         self.x
     }
+
+    /// Returns the width of the Viewport
     pub fn width(&self) -> usize {
         self.width
     }
+
+    /// Returns the right boundary of the Viewport (x + width)
+    pub fn right(&self) -> i32 {
+        let (right, _) = self.x.overflowing_add_unsigned(self.width as u32);
+        right
+    }
+
+    /// Returns the upper boundary of the Viewport (y)
     pub fn y(&self) -> i32 {
         self.y
     }
+
+    /// Returns the height of the Viewport
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    /// Returns the lower boundary of the Viewport (y + height)
+    pub fn bottom(&self) -> i32 {
+        let (bottom, _) = self.y.overflowing_sub_unsigned(self.height as u32);
+        bottom
     }
 }
 
