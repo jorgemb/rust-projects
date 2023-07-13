@@ -152,6 +152,18 @@ impl Viewport {
         Viewport { x, width, y, height, data }
     }
 
+    /// Returns a vector with all the living points within the Viewport
+    pub fn get_points<T: From<i32>>(&self) -> Vec<(T, T)> {
+        let mut points = Vec::new();
+
+        for (index, value) in self.data.iter().enumerate().filter(|&v| *v.1) {
+            let x = T::from((index % self.width) as i32 + self.x);
+            let y = T::from((index / self.width) as i32 - self.y);
+            points.push((x, y));
+        }
+
+        points
+    }
 
     /// Clears the whole buffer, setting every cell as dead
     pub fn clear(&mut self) {
@@ -160,7 +172,7 @@ impl Viewport {
 
     /// Returns if the given position is within the viewport
     #[inline]
-    pub fn in_viewport(&self, x: i32, y: i32) -> bool {
+    fn in_viewport(&self, x: i32, y: i32) -> bool {
         x >= self.x && x < self.right() && y <= self.y && y > self.bottom()
     }
 
