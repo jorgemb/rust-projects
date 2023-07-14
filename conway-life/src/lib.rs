@@ -116,6 +116,7 @@ impl Default for Environment {
 }
 
 /// Represents a viewport of an environment at a given position.
+#[derive(Debug)]
 pub struct Viewport {
     x: i32,
     width: usize,
@@ -180,8 +181,8 @@ impl Viewport {
     pub fn set_living(&mut self, x: i32, y: i32) {
         assert!(self.in_viewport(x, y));
 
-        let row = (x - self.x).abs() as usize;
-        let column = (y - self.y).abs() as usize;
+        let column = (x - self.x).abs() as usize;
+        let row = (y - self.y).abs() as usize;
         let index = row * self.width + column;
 
         if let Some(c) = self.data.get_mut(index) {

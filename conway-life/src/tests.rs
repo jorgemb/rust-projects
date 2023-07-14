@@ -224,10 +224,10 @@ fn viewport_basic() {
 
 #[test]
 fn viewport_display() {
-    let mut viewport = Viewport::new(-1, 1, 3, 3);
+    let mut viewport = Viewport::new(-2, 1, 5, 3);
     viewport.set_living(0, 0);
 
-    let expected_repr = "   \n x \n   ";
+    let expected_repr = "     \n  x  \n     ";
     assert_eq!(expected_repr, viewport.to_string());
 }
 

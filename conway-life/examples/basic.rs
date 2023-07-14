@@ -6,7 +6,7 @@ use crossterm::event;
 use crossterm::event::{Event as CEvent, KeyCode};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Direction, Layout};
+use tui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use tui::{symbols, Terminal};
 use tui::style::{Color, Style};
 use tui::text::Span;
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup life
     let mut conway_life = Environment::new();
     conway_life.set_living(&[SimCell::new(-1, 0), SimCell::new(0, 0), SimCell::new(1, 0)]);
-    let mut viewport = Viewport::new(-10, 10, 20, 20);
+    let mut viewport = Box::new(Viewport::new(-10, 10, 20, 20));
 
     loop {
         terminal.draw(|rect| {
@@ -70,9 +70,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 )
                 .split(size);
 
+            // Recalculate viewport if necessary
+            let inner_rect = chunks[0].inner(&Margin{vertical: 1, horizontal: 1});
+            let viewport_resize = viewport.width() != inner_rect.width as usize || viewport.height() != inner_rect.height as usize;
+
+            if viewport_resize {
+                viewport = Box::new(Viewport::new(-((inner_rect.width / 2) as i32),
+                                                  (inner_rect.height / 2) as i32,
+                                                  inner_rect.width as usize,
+                                                  inner_rect.height as usize));
+            }
+
             conway_life.fill_viewport(&mut viewport);
-            let mut points = viewport.get_points();
-            rect.render_widget(render_environment(&points), chunks[0]);
+            rect.render_widget(render_environment(&viewport), chunks[0]);
         })?;
 
         // Process input
@@ -92,27 +102,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn render_environment(points: &[(f64, f64)]) -> Chart {
-    // Create dataset from viewport
-    let datasets = vec![
-        Dataset::default()
-            // .name("data1")
-            .marker(symbols::Marker::Block)
-            .graph_type(GraphType::Scatter)
-            .style(Style::default().fg(Color::Cyan))
-            .data(points),
-    ];
-    Chart::new(datasets)
-        .block(Block::default().title("Conway's Game of Life").borders(Borders::ALL))
-        .x_axis(Axis::default()
-            // .title(Span::styled("X Axis", Style::default().fg(Color::Red)))
-            .style(Style::default().fg(Color::White)))
-            // .labels(["-10.0", "0.0", "10.0"].iter().cloned().map(Span::from).collect()))
-        .y_axis(Axis::default()
-            // .title(Span::styled("Y Axis", Style::default().fg(Color::Red)))
-            // .style(Style::default().fg(Color::White))
-            .bounds([-10.0, 10.0]))
-            // .labels(["-10.0", "0.0", "10.0"].iter().cloned().map(Span::from).collect()))
+fn render_environment(viewport: &Viewport) -> Paragraph {
+    Paragraph::new(viewport.to_string())
+        .block(Block::default()
+            .title(format!("Conway's Game of Life: x={}, y={}, width={}, height={}",
+                           viewport.x(), viewport.y(), viewport.width(), viewport.height()))
+            .title_alignment(Alignment::Center)
+            .borders(Borders::ALL) )
 }
 
 // fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
