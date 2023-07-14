@@ -52,10 +52,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Setup life
     let mut conway_life = Environment::new();
-    conway_life.set_living(&[SimCell::new(-1, 0), SimCell::new(0, 0), SimCell::new(1, 0)]);
+    conway_life.set_living(&[
+        SimCell::new(0, 1), SimCell::new(1, 1),
+        SimCell::new(-1, 0), SimCell::new(0, 0),
+        SimCell::new(0, -1)]
+    );
     let mut viewport = Box::new(Viewport::new(-10, 10, 20, 20));
+    let mut simulation_time = Duration::from_millis(0);
 
     loop {
+
         terminal.draw(|rect| {
             let size = rect.size();
 
@@ -71,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .split(size);
 
             // Recalculate viewport if necessary
-            let inner_rect = chunks[0].inner(&Margin{vertical: 1, horizontal: 1});
+            let inner_rect = chunks[0].inner(&Margin { vertical: 1, horizontal: 1 });
             let viewport_resize = viewport.width() != inner_rect.width as usize || viewport.height() != inner_rect.height as usize;
 
             if viewport_resize {
@@ -79,10 +85,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                   (inner_rect.height / 2) as i32,
                                                   inner_rect.width as usize,
                                                   inner_rect.height as usize));
+                conway_life.fill_viewport(&mut viewport);
             }
 
-            conway_life.fill_viewport(&mut viewport);
-            rect.render_widget(render_environment(&viewport), chunks[0]);
+            rect.render_widget(render_environment(&viewport, simulation_time.as_micros()), chunks[0]);
         })?;
 
         // Process input
@@ -95,20 +101,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 _ => {}
             },
-            Event::Tick => conway_life.simulate() // Do a simulation step
+            Event::Tick => {
+                let start_instant = Instant::now();
+                conway_life.simulate();
+                simulation_time = start_instant.elapsed();
+                conway_life.fill_viewport(&mut viewport);
+            } // Do a simulation step
         }
     }
 
     Ok(())
 }
 
-fn render_environment(viewport: &Viewport) -> Paragraph {
+fn render_environment(viewport: &Viewport, simulation_time: u128) -> Paragraph {
     Paragraph::new(viewport.to_string())
         .block(Block::default()
-            .title(format!("Conway's Game of Life: x={}, y={}, width={}, height={}",
-                           viewport.x(), viewport.y(), viewport.width(), viewport.height()))
+            .title(format!("Conway's Game of Life: x={}, y={}, width={}, height={} - ({}µs)",
+                           viewport.x(), viewport.y(), viewport.width(), viewport.height(), simulation_time))
             .title_alignment(Alignment::Center)
-            .borders(Borders::ALL) )
+            .borders(Borders::ALL))
 }
 
 // fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
