@@ -8,3 +8,17 @@ You can run the example using:
 ```bash
 cargo run --example basic
 ```
+
+## TODO
+
+- Allow to save and load environments from files
+- Add interaction in the CLI
+  - Pan across the environment
+  - Play / Pause
+  - Increase / Decrease simulation velocity
+- Add an editor to create and manage environments with
+  - Load and save buttons
+  - Set / Unset living
+  - Mouse support
+- Show / Hide the number of iteration, number of living cells or other statistics
+- Benchmark to see that it is efficient
