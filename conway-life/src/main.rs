@@ -1,16 +1,15 @@
-use std::sync::mpsc;
 use std::{io, thread};
-use std::ops::Deref;
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
+
 use crossterm::event;
 use crossterm::event::{Event as CEvent, KeyCode};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use tui::Terminal;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Margin};
-use tui::{symbols, Terminal};
-use tui::style::{Color, Style};
-use tui::text::Span;
-use tui::widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph, Widget};
+use tui::widgets::{Block, Borders, Paragraph};
+
 use conway_life::{Environment, SimCell, Viewport};
 
 enum Event<I> {
@@ -121,42 +120,3 @@ fn render_environment(viewport: &Viewport, simulation_time: u128) -> Paragraph {
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL))
 }
-
-// fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
-//     let mut environment = Environment::default();
-//     environment.set_living(&[SimCell::new(2, 1), SimCell::new(2, 0), SimCell::new(2, -1)]);
-//
-//     let mut viewport = Viewport::new(-10, 10, 20, 20);
-//
-//     loop {
-//         terminal.draw(|frame| {
-//             let size = frame.size();
-//
-//             let block = Block::default()
-//                 .borders(Borders::ALL)
-//                 .title("Conway's Game of Life")
-//                 .title_alignment(Alignment::Center);
-//             let inner_size = block.inner(size);
-//             frame.render_widget(block, size);
-//
-//
-//             // Check if viewport needs to be recreated
-//             if viewport.width() != inner_size.width as usize || viewport.height() != inner_size.height as usize {
-//                 let x = 0 - inner_size.width as i32 / 2;
-//                 let y = inner_size.height as i32 / 2;
-//                 viewport = Viewport::new(x, y, inner_size.width as usize, inner_size.height as usize);
-//             }
-//
-//             environment.fill_viewport(&mut viewport);
-//             let content = Paragraph::new(viewport.to_string());
-//             frame.render_widget(content, inner_size);
-//             environment.simulate();
-//         })?;
-//
-//         if let Event::Key(key) = event::read()? {
-//             if let KeyCode::Char('q') = key.code {
-//                 return Ok(());
-//             }
-//         }
-//     }
-// }

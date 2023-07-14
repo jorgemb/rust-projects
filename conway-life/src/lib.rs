@@ -157,7 +157,7 @@ impl Viewport {
     pub fn get_points<T: From<i32>>(&self) -> Vec<(T, T)> {
         let mut points = Vec::new();
 
-        for (index, value) in self.data.iter().enumerate().filter(|&v| *v.1) {
+        for (index, _value) in self.data.iter().enumerate().filter(|&v| *v.1) {
             let x = T::from((index % self.width) as i32 + self.x);
             let y = T::from((index / self.width) as i32 - self.y);
             points.push((x, y));

@@ -6,7 +6,7 @@ environment. The basic example shows the F-Pentomimmo in simulation.
 
 You can run the example using:
 ```bash
-cargo run --example basic
+cargo run -p conway-life
 ```
 
 ## TODO
@@ -16,9 +16,9 @@ cargo run --example basic
   - Pan across the environment
   - Play / Pause
   - Increase / Decrease simulation velocity
+  - Show / Hide the number of iteration, number of living cells or other statistics
 - Add an editor to create and manage environments with
   - Load and save buttons
   - Set / Unset living
   - Mouse support
-- Show / Hide the number of iteration, number of living cells or other statistics
 - Benchmark to see that it is efficient
