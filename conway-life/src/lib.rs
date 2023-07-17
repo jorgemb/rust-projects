@@ -4,6 +4,9 @@ use std::fmt::{Display, Formatter, Write};
 #[cfg(test)]
 mod tests;
 
+/// Contains the data for show a text based user interface and interact with an environment.
+pub mod application;
+
 /// Represents a single cell within the simulation
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct SimCell {
@@ -35,11 +38,6 @@ pub struct Environment {
 }
 
 impl Environment {
-    /// Creates a new empty environment
-    pub fn new() -> Self {
-        Environment { living_cells: BTreeSet::new() }
-    }
-
     /// Returns true if the given cell is alive
     pub fn get_cell(&self, cell: &SimCell) -> bool {
         self.living_cells.contains(cell)
@@ -111,7 +109,7 @@ impl Environment {
 
 impl Default for Environment {
     fn default() -> Self {
-        Self::new()
+        Environment { living_cells: BTreeSet::new() }
     }
 }
 
