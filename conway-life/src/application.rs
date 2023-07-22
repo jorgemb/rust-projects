@@ -7,7 +7,7 @@ use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 
 use crossterm::event;
-use crossterm::event::{Event, KeyCode, KeyEvent};
+use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use thiserror::Error;
 use tui::backend::CrosstermBackend;
@@ -28,7 +28,9 @@ pub enum ApplicationError {
 
 /// Represents an event happening within the application.
 enum AppEvent {
-    Input(KeyEvent),
+    ShowStats,
+    ShowCoordinates,
+    Pause,
     Tick,
     Quit,
 }
@@ -41,6 +43,11 @@ pub struct App {
 
     // Application specific
     show_stats: bool,
+    show_coordinates: bool,
+    pause: bool,
+    last_simulation_time: Duration,
+    generation: usize,
+    tick_time: Duration,
 }
 
 impl Default for App {
@@ -59,8 +66,13 @@ impl Default for App {
         let viewport = crate::Viewport::new(-10, 10, 20, 20);
 
         let show_stats = true;
+        let show_coordinates = false;
+        let last_simulation_time = Duration::from_secs(0);
+        let tick_time = Duration::from_millis(50);
+        let pause = false;
+        let generation = 0;
 
-        App { environment, viewport, show_stats }
+        App { environment, viewport, show_stats, show_coordinates, pause, generation, last_simulation_time, tick_time }
     }
 }
 
@@ -71,13 +83,11 @@ impl App {
         let (tx, rx) = mpsc::channel();
 
         // Run the input thread
-        let default_tick_rate = Duration::from_millis(200);
-        let input_thread = thread::spawn(move || App::handle_input(default_tick_rate, tx));
+        let initial_tick_time = self.tick_time;
+        let input_thread = thread::spawn(move || App::handle_input(initial_tick_time, tx));
 
         // Run the main loop
         loop {
-            // Update
-
             // Draw
             terminal.draw(|rect| {
                 let area = rect.size();
@@ -98,19 +108,22 @@ impl App {
 
             // Handle input
             match rx.recv()? {
-                AppEvent::Input(event) => match event.code {
-                    KeyCode::Char('q') => {
-                        break;
-                    }
-                    _ => {}
-                }
                 AppEvent::Quit => break,
                 AppEvent::Tick => {
-                    // let start_instant = Instant::now();
-                    self.environment.simulate();
-                    // simulation_time = start_instant.elapsed();
+                    if !self.pause {
+                        let start_instant = Instant::now();
+                        self.environment.simulate();
+                        self.generation += 1;
+                        self.last_simulation_time = start_instant.elapsed();
+                    } else {
+                        self.last_simulation_time = Duration::from_millis(0);
+                    }
+
                     self.environment.fill_viewport(&mut self.viewport);
                 }
+                AppEvent::ShowStats => self.show_stats = !self.show_stats,
+                AppEvent::ShowCoordinates => self.show_coordinates = !self.show_coordinates,
+                AppEvent::Pause => self.pause = !self.pause,
             }
         }
 
@@ -153,14 +166,16 @@ impl App {
             if event::poll(timeout).expect("Poll not working") {
                 // Send the key events
                 if let Event::Key(key) = event::read().expect("Can't read events") {
-                    if sender.send(AppEvent::Input(key)).is_err() {
-                        // Close the input thread on transmission error
-                        break;
-                    }
+                    let result = match (key.code, key.kind) {
+                        (KeyCode::Esc, KeyEventKind::Press) => sender.send(AppEvent::Quit),
+                        (KeyCode::Char('c'), KeyEventKind::Press) => sender.send(AppEvent::ShowCoordinates),
+                        (KeyCode::Char('s'), KeyEventKind::Press) => sender.send(AppEvent::ShowStats),
+                        (KeyCode::Char(' '), KeyEventKind::Press) => sender.send(AppEvent::Pause),
+                        _ => Ok(())
+                    };
 
-                    // Check if it is escape key
-                    if key.code == KeyCode::Esc {
-                        let _ = sender.send(AppEvent::Quit);
+                    // Break on an error
+                    if result.is_err() {
                         break;
                     }
                 }
@@ -177,15 +192,24 @@ impl App {
     /// Render the environment
     fn render_environment(&mut self) -> Paragraph {
         // Create title
-        let title = if self.show_stats {
-            format!("Conway's Game of Life: X={}, Y={}, W={}, H={}",
+        let coordinates = if self.show_coordinates {
+            format!(" -- X={}, Y={}, W={}, H={}",
                     self.viewport.x(),
                     self.viewport.y(),
                     self.viewport.width(),
                     self.viewport.height())
         } else {
-            String::from("Conway's Game of Life")
+            String::from("")
         };
+
+        let stats = if self.show_stats {
+            format!(" -- Time={}µm", self.last_simulation_time.as_micros())
+        } else {
+            String::default()
+        };
+
+        let title = format!("Conway's Game of Life -- GEN={}{}{}",
+                            self.generation, coordinates, stats);
 
         // Create paragraph
         Paragraph::new(self.viewport.to_string())

@@ -34,7 +34,7 @@ impl SimCell {
 /// 2. Any live cell with two or three live neighbours lives on to the next generation.
 /// 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
 /// 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Environment {
     living_cells: BTreeSet<SimCell>,
 }
@@ -109,11 +109,6 @@ impl Environment {
     }
 }
 
-impl Default for Environment {
-    fn default() -> Self {
-        Environment { living_cells: BTreeSet::new() }
-    }
-}
 
 /// Represents a viewport of an environment at a given position.
 #[derive(Debug)]
@@ -181,8 +176,8 @@ impl Viewport {
     pub fn set_living(&mut self, x: i32, y: i32) {
         assert!(self.in_viewport(x, y));
 
-        let column = (x - self.x).abs() as usize;
-        let row = (y - self.y).abs() as usize;
+        let column = (x - self.x).unsigned_abs() as usize;
+        let row = (y - self.y).unsigned_abs() as usize;
         let index = row * self.width + column;
 
         if let Some(c) = self.data.get_mut(index) {
