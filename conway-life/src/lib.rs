@@ -1,5 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::{Display, Formatter, Write};
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 mod tests;
@@ -8,7 +9,7 @@ mod tests;
 pub mod application;
 
 /// Represents a single cell within the simulation
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Serialize, Deserialize)]
 pub struct SimCell {
     pub x: i32,
     pub y: i32,
@@ -33,6 +34,7 @@ impl SimCell {
 /// 2. Any live cell with two or three live neighbours lives on to the next generation.
 /// 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
 /// 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Environment {
     living_cells: BTreeSet<SimCell>,
 }

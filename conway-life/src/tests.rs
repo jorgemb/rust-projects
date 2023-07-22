@@ -242,3 +242,15 @@ fn environment_viewport() {
     let expected_repr = " x \nxxx\n x ";
     assert_eq!(expected_repr, viewport.to_string());
 }
+
+#[test]
+fn environment_serialization() {
+    let mut env = Environment::default();
+    env.set_living(&[SimCell::new(12, 34)]);
+
+    let serialized = serde_yaml::to_string(&env).unwrap();
+    assert_eq!(serialized, "living_cells:\n- x: 12\n  y: 34\n");
+
+    let new_env: Environment = serde_yaml::from_str(&serialized).unwrap();
+    assert_eq!(env.living_cells, new_env.living_cells);
+}
