@@ -3,18 +3,19 @@
 use std::{io, thread};
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
+
 use crossterm::event;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-
-use tui::backend::CrosstermBackend;
-use tui::Terminal;
-
 use thiserror::Error;
-use tui::layout::{Alignment, Layout};
+use tui::backend::CrosstermBackend;
+use tui::layout::{Alignment, Margin};
+use tui::Terminal;
 use tui::widgets::{Block, Borders, Paragraph};
+
+use crate::{SimCell, Viewport};
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
@@ -46,7 +47,15 @@ impl Default for App {
     /// Creates a default implementation App
     fn default() -> Self {
         // Setup environment and viewport
-        let environment = crate::Environment::default();
+        let mut environment = crate::Environment::default();
+
+        // Create the F-Pentomino
+        environment.set_living(&[
+            SimCell::new(0, 1), SimCell::new(1, 1),
+            SimCell::new(-1, 0), SimCell::new(0, 0),
+            SimCell::new(0, -1)]
+        );
+
         let viewport = crate::Viewport::new(-10, 10, 20, 20);
 
         let show_stats = true;
@@ -72,6 +81,17 @@ impl App {
             // Draw
             terminal.draw(|rect| {
                 let area = rect.size();
+
+                // Resize viewport if necessary
+                let target_area = area.inner(&Margin { horizontal: 1, vertical: 1 });
+                if target_area.width as usize != self.viewport.width() || target_area.height as usize != self.viewport.height() {
+                    let width = target_area.width as usize;
+                    let height = target_area.height as usize;
+                    let x = -((width / 2) as i32);
+                    let y = (height / 2) as i32;
+
+                    self.viewport = Viewport::new(x, y, width, height);
+                }
 
                 rect.render_widget(self.render_environment(), area);
             })?;
