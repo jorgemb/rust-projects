@@ -21,7 +21,7 @@ fn test_cell() {
 
 #[test]
 fn empty_environment() {
-    let mut env = Environment::new();
+    let mut env = Environment::default();
 
     // At start the environment is empty
     assert!(env.living_cells.is_empty());
@@ -34,7 +34,7 @@ fn empty_environment() {
 
 #[test]
 fn change_environment() {
-    let mut env = Environment::new();
+    let mut env = Environment::default();
 
     // Toggle single cell
     let cell = SimCell::new(0, 0);
@@ -53,7 +53,7 @@ fn change_environment() {
 /// Checks if the environment contains only the given cells
 fn check_environment(start_cells: &[SimCell], expected_cells: &[SimCell]) {
     // Initialize environment
-    let mut env = Environment::new();
+    let mut env = Environment::default();
     env.set_living(start_cells);
     env.simulate();
 
@@ -233,7 +233,7 @@ fn viewport_display() {
 
 #[test]
 fn environment_viewport() {
-    let mut env = Environment::new();
+    let mut env = Environment::default();
     env.set_living(&[SimCell::new(0, 1), SimCell::new(-1, 0), SimCell::new(0, 0), SimCell::new(1, 0), SimCell::new(0, -1)]);
 
     let mut viewport = Viewport::new(-1, 1, 3, 3);
@@ -241,4 +241,16 @@ fn environment_viewport() {
 
     let expected_repr = " x \nxxx\n x ";
     assert_eq!(expected_repr, viewport.to_string());
+}
+
+#[test]
+fn environment_serialization() {
+    let mut env = Environment::default();
+    env.set_living(&[SimCell::new(12, 34)]);
+
+    let serialized = serde_yaml::to_string(&env).unwrap();
+    assert_eq!(serialized, "living_cells:\n- x: 12\n  y: 34\n");
+
+    let new_env: Environment = serde_yaml::from_str(&serialized).unwrap();
+    assert_eq!(env.living_cells, new_env.living_cells);
 }

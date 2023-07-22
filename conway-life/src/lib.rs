@@ -1,11 +1,15 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::{Display, Formatter, Write};
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 mod tests;
 
+/// Contains the data for show a text based user interface and interact with an environment.
+pub mod application;
+
 /// Represents a single cell within the simulation
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Serialize, Deserialize)]
 pub struct SimCell {
     pub x: i32,
     pub y: i32,
@@ -30,16 +34,12 @@ impl SimCell {
 /// 2. Any live cell with two or three live neighbours lives on to the next generation.
 /// 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
 /// 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Environment {
     living_cells: BTreeSet<SimCell>,
 }
 
 impl Environment {
-    /// Creates a new empty environment
-    pub fn new() -> Self {
-        Environment { living_cells: BTreeSet::new() }
-    }
-
     /// Returns true if the given cell is alive
     pub fn get_cell(&self, cell: &SimCell) -> bool {
         self.living_cells.contains(cell)
@@ -109,11 +109,6 @@ impl Environment {
     }
 }
 
-impl Default for Environment {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 /// Represents a viewport of an environment at a given position.
 #[derive(Debug)]
@@ -157,7 +152,7 @@ impl Viewport {
     pub fn get_points<T: From<i32>>(&self) -> Vec<(T, T)> {
         let mut points = Vec::new();
 
-        for (index, value) in self.data.iter().enumerate().filter(|&v| *v.1) {
+        for (index, _value) in self.data.iter().enumerate().filter(|&v| *v.1) {
             let x = T::from((index % self.width) as i32 + self.x);
             let y = T::from((index / self.width) as i32 - self.y);
             points.push((x, y));
@@ -181,8 +176,8 @@ impl Viewport {
     pub fn set_living(&mut self, x: i32, y: i32) {
         assert!(self.in_viewport(x, y));
 
-        let column = (x - self.x).abs() as usize;
-        let row = (y - self.y).abs() as usize;
+        let column = (x - self.x).unsigned_abs() as usize;
+        let row = (y - self.y).unsigned_abs() as usize;
         let index = row * self.width + column;
 
         if let Some(c) = self.data.get_mut(index) {
