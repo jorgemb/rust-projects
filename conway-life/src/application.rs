@@ -11,7 +11,7 @@ use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use thiserror::Error;
 use tui::backend::CrosstermBackend;
-use tui::layout::{Alignment, Margin};
+use tui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use tui::Terminal;
 use tui::widgets::{Block, Borders, Paragraph};
 
@@ -30,6 +30,8 @@ pub enum ApplicationError {
 enum AppEvent {
     ShowStats,
     ShowCoordinates,
+    PartialInput(String),
+    ErrorInput(String, String),
     Pause,
     Tick,
     Quit,
@@ -85,15 +87,24 @@ impl App {
         // Run the input thread
         let initial_tick_time = self.tick_time;
         let input_thread = thread::spawn(move || App::handle_input(initial_tick_time, tx));
+        let mut current_input = String::default();
 
         // Run the main loop
         loop {
             // Draw
             terminal.draw(|rect| {
                 let area = rect.size();
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Min(4),
+                        Constraint::Length(4)
+                    ].as_ref())
+                    .split(area);
 
+                // SIMULATION VIEWPORT
                 // Resize viewport if necessary
-                let target_area = area.inner(&Margin { horizontal: 1, vertical: 1 });
+                let target_area = chunks[0];
                 if target_area.width as usize != self.viewport.width() || target_area.height as usize != self.viewport.height() {
                     let width = target_area.width as usize;
                     let height = target_area.height as usize;
@@ -103,7 +114,15 @@ impl App {
                     self.viewport = Viewport::new(x, y, width, height);
                 }
 
-                rect.render_widget(self.render_environment(), area);
+                rect.render_widget(self.render_environment(), target_area);
+
+
+                // INPUT VIEWPORT
+                let input_block = Paragraph::new(current_input.clone())
+                    .block(Block::default()
+                        .title("Input")
+                        .borders(Borders::ALL));
+                rect.render_widget(input_block, chunks[1]);
             })?;
 
             // Handle input
@@ -121,6 +140,8 @@ impl App {
 
                     self.environment.fill_viewport(&mut self.viewport);
                 }
+                AppEvent::PartialInput(input) => current_input = input,
+                AppEvent::ErrorInput(input, message) => todo!(),
                 AppEvent::ShowStats => self.show_stats = !self.show_stats,
                 AppEvent::ShowCoordinates => self.show_coordinates = !self.show_coordinates,
                 AppEvent::Pause => self.pause = !self.pause,
@@ -157,6 +178,7 @@ impl App {
     /// Handle input and events
     fn handle_input(tick_rate: Duration, sender: Sender<AppEvent>) {
         let mut last_tick = Instant::now();
+        let mut current_input = String::default();
 
         loop {
             let timeout = tick_rate
@@ -168,9 +190,27 @@ impl App {
                 if let Event::Key(key) = event::read().expect("Can't read events") {
                     let result = match (key.code, key.kind) {
                         (KeyCode::Esc, KeyEventKind::Press) => sender.send(AppEvent::Quit),
-                        (KeyCode::Char('c'), KeyEventKind::Press) => sender.send(AppEvent::ShowCoordinates),
-                        (KeyCode::Char('s'), KeyEventKind::Press) => sender.send(AppEvent::ShowStats),
-                        (KeyCode::Char(' '), KeyEventKind::Press) => sender.send(AppEvent::Pause),
+                        // (KeyCode::Char('c'), KeyEventKind::Press) => sender.send(AppEvent::ShowCoordinates),
+                        // (KeyCode::Char('s'), KeyEventKind::Press) => sender.send(AppEvent::ShowStats),
+                        // (KeyCode::Char(' '), KeyEventKind::Press) => sender.send(AppEvent::Pause),
+                        (KeyCode::Char(c), KeyEventKind::Press) => {
+                            current_input.push(c);
+                            sender.send(AppEvent::PartialInput(current_input.clone()))
+                        }
+                        (KeyCode::Backspace, KeyEventKind::Press) => {
+                            current_input.pop();
+                            sender.send(AppEvent::PartialInput(current_input.clone()))
+                        }
+                        (KeyCode::Enter, KeyEventKind::Press) => {
+                            if !current_input.is_empty() {
+                                let message = App::parse_input(&current_input);
+                                current_input.clear();
+                                sender.send(message)
+                            } else {
+                                // Ignore enter
+                                sender.send(AppEvent::PartialInput(String::default()))
+                            }
+                        }
                         _ => Ok(())
                     };
 
@@ -186,6 +226,23 @@ impl App {
                     last_tick = Instant::now();
                 }
             }
+        }
+    }
+
+    /// Parses current input and returns a message to send
+    fn parse_input(input: &str) -> AppEvent {
+        let mut chunks = input.split(' ');
+
+        if let Some(instruction) = chunks.next() {
+            match instruction {
+                "stats" | "s" => AppEvent::ShowStats,
+                "coord" | "c" => AppEvent::ShowCoordinates,
+                "pause" | "p" => AppEvent::Pause,
+                "quit" | "q" => AppEvent::Quit,
+                _ => AppEvent::ErrorInput(input.to_string(), String::from("Unknown instruction"))
+            }
+        } else {
+            AppEvent::ErrorInput(input.to_string(), String::from("Invalid instruction"))
         }
     }
 
