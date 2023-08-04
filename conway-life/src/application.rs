@@ -1,7 +1,7 @@
 //! Contains the modules to show the user interface of the simulator.
 
-use std::{io, thread};
-use std::io::Stdout;
+use std::{fs, io, thread};
+use std::io::{Read, Stdout, Write};
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
@@ -11,11 +11,11 @@ use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use thiserror::Error;
 use tui::backend::CrosstermBackend;
-use tui::layout::{Alignment, Constraint, Direction, Layout, Margin};
+use tui::layout::{Alignment, Constraint, Direction, Layout};
 use tui::Terminal;
 use tui::widgets::{Block, Borders, Paragraph};
 
-use crate::{SimCell, Viewport};
+use crate::{Environment, SimCell, Viewport};
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
@@ -32,6 +32,8 @@ enum AppEvent {
     ShowCoordinates,
     PartialInput(String),
     ErrorInput(String, String),
+    Load(fs::File),
+    Save(fs::File),
     Pause,
     Tick,
     Quit,
@@ -88,6 +90,7 @@ impl App {
         let initial_tick_time = self.tick_time;
         let input_thread = thread::spawn(move || App::handle_input(initial_tick_time, tx));
         let mut current_input = String::default();
+        let mut current_message = String::default();
 
         // Run the main loop
         loop {
@@ -118,7 +121,7 @@ impl App {
 
 
                 // INPUT VIEWPORT
-                let input_block = Paragraph::new(current_input.clone())
+                let input_block = Paragraph::new(format!("{}\n{}", current_input, current_message))
                     .block(Block::default()
                         .title("Input")
                         .borders(Borders::ALL));
@@ -140,8 +143,35 @@ impl App {
 
                     self.environment.fill_viewport(&mut self.viewport);
                 }
-                AppEvent::PartialInput(input) => current_input = input,
-                AppEvent::ErrorInput(input, message) => todo!(),
+                AppEvent::PartialInput(input) => {
+                    current_input = input;
+                    current_message.clear();
+                }
+                AppEvent::ErrorInput(input, message) => {
+                    current_input = input;
+                    current_message = message;
+                }
+                AppEvent::Load(mut file) => {
+                    // Try loading the file
+                    let mut environment_data = String::new();
+                    let _ = file.read_to_string(&mut environment_data);
+                    let loaded_env = serde_yaml::from_str::<Environment>(&environment_data);
+                    if let Ok(loaded_env) = loaded_env {
+                        self.environment = loaded_env;
+                        self.generation = 0;
+                        current_message = String::from("Loaded state from file");
+                    }
+                }
+                AppEvent::Save(mut file) => {
+                    let environment_data = serde_yaml::to_string(&self.environment);
+                    if let Ok(environment_data) = environment_data {
+                        let result = file.write_all(environment_data.as_bytes());
+                        match result {
+                            Ok(_) => current_message = String::from("Written state to file"),
+                            Err(err) => current_message = format!("Unable to write state to file. Error: {}", err)
+                        }
+                    } else {}
+                }
                 AppEvent::ShowStats => self.show_stats = !self.show_stats,
                 AppEvent::ShowCoordinates => self.show_coordinates = !self.show_coordinates,
                 AppEvent::Pause => self.pause = !self.pause,
@@ -235,10 +265,34 @@ impl App {
 
         if let Some(instruction) = chunks.next() {
             match instruction {
-                "stats" | "s" => AppEvent::ShowStats,
+                "stats" | "t" => AppEvent::ShowStats,
                 "coord" | "c" => AppEvent::ShowCoordinates,
                 "pause" | "p" => AppEvent::Pause,
                 "quit" | "q" => AppEvent::Quit,
+                "load" | "l" => {
+                    if let Some(path) = chunks.next() {
+                        let file = fs::File::open(path);
+                        if let Ok(file) = file {
+                            AppEvent::Load(file)
+                        } else {
+                            AppEvent::ErrorInput(input.to_string(), String::from("File not found"))
+                        }
+                    } else {
+                        AppEvent::ErrorInput(input.to_string(), String::from("File not specified"))
+                    }
+                }
+                "save" | "s" => {
+                    if let Some(path) = chunks.next() {
+                        let file = fs::File::create(path);
+                        if let Ok(file) = file {
+                            AppEvent::Save(file)
+                        } else {
+                            AppEvent::ErrorInput(input.to_string(), format!("Unable to create file: {}", path))
+                        }
+                    } else {
+                        AppEvent::ErrorInput(input.to_string(), String::from("File not specified"))
+                    }
+                }
                 _ => AppEvent::ErrorInput(input.to_string(), String::from("Unknown instruction"))
             }
         } else {
@@ -260,7 +314,7 @@ impl App {
         };
 
         let stats = if self.show_stats {
-            format!(" -- Time={}µm", self.last_simulation_time.as_micros())
+            format!(" -- Time={}µm, Living={}", self.last_simulation_time.as_micros(), self.environment.get_living_count())
         } else {
             String::default()
         };
