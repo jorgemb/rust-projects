@@ -45,6 +45,10 @@ impl Environment {
         self.living_cells.contains(cell)
     }
 
+    pub fn get_living_count(&self) -> usize{
+        self.living_cells.len()
+    }
+
     /// Toggles a cell between living and dead.
     /// Returns the new value of the cell.
     pub fn toggle_cell(&mut self, cell: &SimCell) -> bool {
