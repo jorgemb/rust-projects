@@ -20,6 +20,8 @@ load <path> | l <path> -> Load an environment (in YAML) in the given route
 save <path> | s <path> -> Save the current environment into the given route
 ```
 
+![Example running a simulation](docs/example-run.png)
+
 ## TODO
 
 - ~~Allow to save and load environments from files~~
