@@ -3,4 +3,5 @@
 members = [
     "perfect-maze-generator",
     "conway-life",
+    "openai-query-manager",
 ]
