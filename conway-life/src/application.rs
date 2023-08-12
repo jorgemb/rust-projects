@@ -6,14 +6,14 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 
-use crossterm::event;
+use crossterm::{event, execute};
 use crossterm::event::{Event, KeyCode, KeyEventKind};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+use ratatui::backend::CrosstermBackend;
+use ratatui::layout::{Alignment, Constraint, Direction, Layout};
+use ratatui::Terminal;
+use ratatui::widgets::{Block, Borders, Paragraph};
 use thiserror::Error;
-use tui::backend::CrosstermBackend;
-use tui::layout::{Alignment, Constraint, Direction, Layout};
-use tui::Terminal;
-use tui::widgets::{Block, Borders, Paragraph};
 
 use crate::{Environment, SimCell, Viewport};
 
@@ -189,7 +189,8 @@ impl App {
     fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, ApplicationError> {
         // Setup the terminal
         enable_raw_mode()?;
-        let stdout = io::stdout();
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen)?;
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
         terminal.clear()?;
@@ -200,6 +201,7 @@ impl App {
     /// Clean's up the terminal for the following process
     fn cleanup_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), ApplicationError> {
         disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
         terminal.show_cursor()?;
 
         Ok(())
