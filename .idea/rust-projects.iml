@@ -7,6 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/conway-life/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/conway-life/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/openai-query-manager/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/util/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

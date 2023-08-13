@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "util",
     "perfect-maze-generator",
     "conway-life",
     "openai-query-manager",
