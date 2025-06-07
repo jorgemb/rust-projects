@@ -87,7 +87,7 @@ impl Environment {
         }
 
         // Add new cells
-        for new_living in neighboors.iter().filter(|(_, &v)| v == 3).map(|(c, _)| *c) {
+        for new_living in neighboors.iter().filter(|&(_, &v)| v == 3).map(|(c, _)| *c) {
             self.living_cells.insert(new_living);
         }
 
